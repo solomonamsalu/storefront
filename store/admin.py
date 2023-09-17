@@ -2,7 +2,7 @@ from typing import Any, List, Optional, Tuple
 from django.contrib import admin
 from django.db.models.query import QuerySet
 from django.http.request import HttpRequest
-from .models import Product,Collection,Promotion,OrderItem,Order,Customer,Cart,CartItem
+from .models import *
 from django.db.models import Count
 from django.utils.html import format_html, urlencode
 from django.urls import reverse
@@ -18,6 +18,18 @@ class InventoryFilter(admin.SimpleListFilter):
     def queryset(self, request, queryset:QuerySet):
         if self.value()=='<10':
             return queryset.filter(inventory__lt=10)
+        
+
+class ProductImageInLine(admin.TabularInline):
+    model=ProductImage
+    readonly_fields=['thumbnail']
+
+    def thumbnail(self,instance):
+        if instance.image.name!='':
+            return format_html(f'<img src="{instance.image.url}" class="thumbnail" />')
+                                  
+        return ''
+    
 @admin.register(Product)
 class ProductAdmmin(admin.ModelAdmin):
     prepopulated_fields={
@@ -25,6 +37,7 @@ class ProductAdmmin(admin.ModelAdmin):
     }
     autocomplete_fields=['collection']
     actions=['clear_inventory']
+    inlines=[ProductImageInLine]
     list_display=['title','price','collection_title']
     list_editable=['price']
     list_filter=['collection','last_update',InventoryFilter]
@@ -41,6 +54,11 @@ class ProductAdmmin(admin.ModelAdmin):
             request,
             f'{updated_count} product were successfully updated'
         )
+    class Media:
+        css= {
+            'all': ['store/styles.css']
+            }
+
 
 @admin.register(Collection)
 class ColloctionAdmin(admin.ModelAdmin):
